@@ -1,0 +1,286 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Results Management System</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f1f5f9;
+      color: #172033;
+    }
+    header {
+      background: #102a43;
+      color: white;
+      padding: 24px 16px;
+      text-align: center;
+    }
+    header h1 { margin: 0 0 8px; font-size: 25px; }
+    header p { margin: 0; color: #dbeafe; }
+    main { max-width: 1000px; margin: 24px auto; padding: 0 14px; }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat, .panel {
+      background: white;
+      padding: 18px;
+      border-radius: 12px;
+      box-shadow: 0 3px 12px #102a4310;
+    }
+    .stat span { display: block; color: #64748b; font-size: 13px; }
+    .stat strong { display: block; margin-top: 8px; font-size: 24px; }
+    .panel { margin-bottom: 20px; }
+    h2 { margin-top: 0; font-size: 19px; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+    label { display: block; font-size: 14px; margin-bottom: 7px; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 7px;
+      font-size: 16px;
+    }
+    button {
+      border: 0;
+      padding: 12px 16px;
+      border-radius: 7px;
+      background: #176b52;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    button:hover { opacity: .9; }
+    .delete-btn { background: #b42318; padding: 8px 10px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 560px; }
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      text-align: left;
+    }
+    th { background: #f8fafc; color: #475569; font-size: 13px; }
+    .grade { font-weight: bold; color: #176b52; }
+    #message { margin-top: 12px; font-size: 14px; }
+    .empty { color: #64748b; text-align: center; padding: 25px; }
+    .note { color: #64748b; font-size: 13px; line-height: 1.6; }
+    footer { text-align: center; padding: 20px; color: #64748b; font-size: 13px; }
+    @media (max-width: 600px) {
+      .stats { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      header h1 { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Student Results Management System</h1>
+    <p>Manage student scores and calculate academic performance.</p>
+  </header>
+
+  <main>
+    <section class="stats">
+      <div class="stat">
+        <span>Total Students</span>
+        <strong id="total">0</strong>
+      </div>
+      <div class="stat">
+        <span>Class Average</span>
+        <strong id="average">0.00</strong>
+      </div>
+      <div class="stat">
+        <span>Highest Score</span>
+        <strong id="highest">—</strong>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Add Student Result</h2>
+      <form id="studentForm">
+        <div class="form-grid">
+          <div>
+            <label for="studentName">Student name</label>
+            <input id="studentName" type="text"
+              placeholder="Enter student name" required maxlength="80">
+          </div>
+          <div>
+            <label for="studentScore">Score (0–100)</label>
+            <input id="studentScore" type="number"
+              min="0" max="100" step="0.01"
+              placeholder="e.g. 85" required>
+          </div>
+          <button type="submit">Add Student</button>
+        </div>
+        <p id="message" role="status"></p>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>Student Results</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Student Name</th>
+              <th>Score</th>
+              <th>Grade</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="results"></tbody>
+        </table>
+      </div>
+      <p id="empty" class="empty">No student results yet. Add a student above.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Class Performance Summary</h2>
+      <p id="lowest">Lowest score: —</p>
+      <p id="best">Best-performing student: —</p>
+      <p class="note">
+        Grade scale: A = 80–100, B = 70–79.99,
+        C = 60–69.99, D = 50–59.99, F = below 50.
+      </p>
+      <p class="note">
+        This demonstration stores records in JavaScript arrays while the page
+        is open. Refreshing the page resets the results.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    Student Results Management System | Data Structures: Arrays
+  </footer>
+
+  <script>
+    // Parallel arrays store each student's name and score.
+    const studentNames = [];
+    const studentScores = [];
+
+    function getGrade(score) {
+      if (score >= 80) return "A";
+      if (score >= 70) return "B";
+      if (score >= 60) return "C";
+      if (score >= 50) return "D";
+      return "F";
+    }
+
+    const form = document.getElementById("studentForm");
+    const message = document.getElementById("message");
+
+    form.addEventListener("submit", function(event) {
+      event.preventDefault();
+
+      const name = document.getElementById("studentName").value.trim();
+      const score = Number(document.getElementById("studentScore").value);
+
+      if (!name) {
+        message.textContent = "Please enter the student's name.";
+        return;
+      }
+      if (document.getElementById("studentScore").value === "" ||
+          !Number.isFinite(score) || score < 0 || score > 100) {
+        message.textContent = "Enter a valid score between 0 and 100.";
+        return;
+      }
+
+      studentNames.push(name);
+      studentScores.push(score);
+
+      message.textContent = "Student result added successfully.";
+      form.reset();
+      renderResults();
+    });
+
+    function removeStudent(index) {
+      studentNames.splice(index, 1);
+      studentScores.splice(index, 1);
+      message.textContent = "Student result removed.";
+      renderResults();
+    }
+
+    function renderResults() {
+      const tbody = document.getElementById("results");
+      tbody.replaceChildren();
+
+      let total = 0;
+      let highestIndex = -1;
+      let lowestIndex = -1;
+
+      for (let i = 0; i < studentNames.length; i++) {
+        total += studentScores[i];
+
+        if (highestIndex === -1 ||
+            studentScores[i] > studentScores[highestIndex]) {
+          highestIndex = i;
+        }
+        if (lowestIndex === -1 ||
+            studentScores[i] < studentScores[lowestIndex]) {
+          lowestIndex = i;
+        }
+
+        const row = document.createElement("tr");
+        const values = [
+          i + 1,
+          studentNames[i],
+          studentScores[i].toFixed(2),
+          getGrade(studentScores[i])
+        ];
+
+        values.forEach(function(value, column) {
+          const cell = document.createElement("td");
+          cell.textContent = value;
+          if (column === 3) cell.className = "grade";
+          row.appendChild(cell);
+        });
+
+        const actionCell = document.createElement("td");
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.className = "delete-btn";
+        deleteButton.type = "button";
+        deleteButton.addEventListener("click", function() {
+          removeStudent(i);
+        });
+        actionCell.appendChild(deleteButton);
+        row.appendChild(actionCell);
+        tbody.appendChild(row);
+      }
+
+      const count = studentNames.length;
+      document.getElementById("total").textContent = count;
+      document.getElementById("average").textContent =
+        count ? (total / count).toFixed(2) : "0.00";
+
+      document.getElementById("highest").textContent =
+        highestIndex === -1 ? "—" :
+        studentScores[highestIndex].toFixed(2);
+
+      document.getElementById("lowest").textContent =
+        lowestIndex === -1 ? "Lowest score: —" :
+        "Lowest score: " + studentScores[lowestIndex].toFixed(2) +
+        " (" + studentNames[lowestIndex] + ")";
+
+      document.getElementById("best").textContent =
+        highestIndex === -1 ? "Best-performing student: —" :
+        "Best-performing student: " + studentNames[highestIndex];
+
+      document.getElementById("empty").hidden = count > 0;
+    }
+
+    renderResults();
+  </script>
+</body>
+</html>
