@@ -166,121 +166,83 @@
 
   <script>
     // Parallel arrays store each student's name and score.
-    const studentNames = [];
-    const studentScores = [];
+    const studentNames = []; const studentScores = [];
+function getGrade(score) { if (score >= 80) return "A"; if (score >= 70) return "B"; if (score >= 60) return "C"; if (score >= 50) return "D"; return "F"; }
+// Automatically sort grades A to F, // then sort equal grades by score, highest first. function sortStudents() { const students = [];
+for (let i = 0; i < studentNames.length; i++) { students.push({ name: studentNames[i], score: studentScores[i] }); }
+const gradeOrder = { A: 1, B: 2, C: 3, D: 4, F: 5 };
+students.sort(function(a, b) { const gradeA = gradeOrder[getGrade(a.score)]; const gradeB = gradeOrder[getGrade(b.score)];
+if (gradeA !== gradeB) {
+  return gradeA - gradeB;
+}
 
-    function getGrade(score) {
-      if (score >= 80) return "A";
-      if (score >= 70) return "B";
-      if (score >= 60) return "C";
-      if (score >= 50) return "D";
-      return "F";
-    }
+return b.score - a.score;
+});
+studentNames.length = 0; studentScores.length = 0;
+for (let i = 0; i < students.length; i++) { studentNames.push(students[i].name); studentScores.push(students[i].score); } }
+const form = document.getElementById("studentForm"); const message = document.getElementById("message");
+form.addEventListener("submit", function(event) { event.preventDefault();
+const name = document.getElementById("studentName").value.trim(); const scoreInput = document.getElementById("studentScore").value; const score = Number(scoreInput);
+if (name === "") { message.textContent = "Please enter a student's name."; return; }
+if (scoreInput === ""  !Number.isFinite(score)  score < 0 || score > 100) { message.textContent = "Enter a score between 0 and 100."; return; }
+studentNames.push(name); studentScores.push(score);
+sortStudents(); form.reset(); message.textContent = "Student added and results sorted!"; renderResults(); });
+function removeStudent(index) { studentNames.splice(index, 1); studentScores.splice(index, 1);
+message.textContent = "Student result removed."; renderResults(); }
+function renderResults() { const tbody = document.getElementById("results"); tbody.replaceChildren();
+let total = 0; let highestIndex = -1; let lowestIndex = -1;
+for (let i = 0; i < studentNames.length; i++) { total += studentScores[i];
+if (highestIndex === -1 ||
+    studentScores[i] > studentScores[highestIndex]) {
+  highestIndex = i;
+}
 
-    const form = document.getElementById("studentForm");
-    const message = document.getElementById("message");
+if (lowestIndex === -1 ||
+    studentScores[i] < studentScores[lowestIndex]) {
+  lowestIndex = i;
+}
 
-    form.addEventListener("submit", function(event) {
-      event.preventDefault();
+const row = document.createElement("tr");
+const values = [
+  i + 1,
+  studentNames[i],
+  studentScores[i].toFixed(2),
+  getGrade(studentScores[i])
+];
 
-      const name = document.getElementById("studentName").value.trim();
-      const score = Number(document.getElementById("studentScore").value);
+values.forEach(function(value, column) {
+  const cell = document.createElement("td");
+  cell.textContent = value;
 
-      if (!name) {
-        message.textContent = "Please enter the student's name.";
-        return;
-      }
-      if (document.getElementById("studentScore").value === "" ||
-          !Number.isFinite(score) || score < 0 || score > 100) {
-        message.textContent = "Enter a valid score between 0 and 100.";
-        return;
-      }
+  if (column === 3) {
+    cell.className = "grade";
+  }
 
-      studentNames.push(name);
-      studentScores.push(score);
+  row.appendChild(cell);
+});
 
-      message.textContent = "Student result added successfully.";
-      form.reset();
-      renderResults();
-    });
+const actionCell = document.createElement("td");
+const deleteButton = document.createElement("button");
 
-    function removeStudent(index) {
-      studentNames.splice(index, 1);
-      studentScores.splice(index, 1);
-      message.textContent = "Student result removed.";
-      renderResults();
-    }
+deleteButton.textContent = "Delete";
+deleteButton.className = "delete-btn";
+deleteButton.type = "button";
 
-    function renderResults() {
-      const tbody = document.getElementById("results");
-      tbody.replaceChildren();
+deleteButton.addEventListener("click", function() {
+  removeStudent(i);
+});
 
-      let total = 0;
-      let highestIndex = -1;
-      let lowestIndex = -1;
-
-      for (let i = 0; i < studentNames.length; i++) {
-        total += studentScores[i];
-
-        if (highestIndex === -1 ||
-            studentScores[i] > studentScores[highestIndex]) {
-          highestIndex = i;
-        }
-        if (lowestIndex === -1 ||
-            studentScores[i] < studentScores[lowestIndex]) {
-          lowestIndex = i;
-        }
-
-        const row = document.createElement("tr");
-        const values = [
-          i + 1,
-          studentNames[i],
-          studentScores[i].toFixed(2),
-          getGrade(studentScores[i])
-        ];
-
-        values.forEach(function(value, column) {
-          const cell = document.createElement("td");
-          cell.textContent = value;
-          if (column === 3) cell.className = "grade";
-          row.appendChild(cell);
-        });
-
-        const actionCell = document.createElement("td");
-        const deleteButton = document.createElement("button");
-        deleteButton.textContent = "Delete";
-        deleteButton.className = "delete-btn";
-        deleteButton.type = "button";
-        deleteButton.addEventListener("click", function() {
-          removeStudent(i);
-        });
-        actionCell.appendChild(deleteButton);
-        row.appendChild(actionCell);
-        tbody.appendChild(row);
-      }
-
-      const count = studentNames.length;
-      document.getElementById("total").textContent = count;
-      document.getElementById("average").textContent =
-        count ? (total / count).toFixed(2) : "0.00";
-
-      document.getElementById("highest").textContent =
-        highestIndex === -1 ? "—" :
-        studentScores[highestIndex].toFixed(2);
-
-      document.getElementById("lowest").textContent =
-        lowestIndex === -1 ? "Lowest score: —" :
-        "Lowest score: " + studentScores[lowestIndex].toFixed(2) +
-        " (" + studentNames[lowestIndex] + ")";
-
-      document.getElementById("best").textContent =
-        highestIndex === -1 ? "Best-performing student: —" :
-        "Best-performing student: " + studentNames[highestIndex];
-
-      document.getElementById("empty").hidden = count > 0;
-    }
-
-    renderResults();
+actionCell.appendChild(deleteButton);
+row.appendChild(actionCell);
+tbody.appendChild(row);
+}
+const count = studentNames.length;
+document.getElementById("total").textContent = count; document.getElementById("average").textContent = count ? (total / count).toFixed(2) : "0.00";
+document.getElementById("highest").textContent = highestIndex === -1 ? "—" : studentScores[highestIndex].toFixed(2);
+document.getElementById("lowest").textContent = lowestIndex === -1 ? "Lowest score: —" : "Lowest score: " + studentScores[lowestIndex].toFixed(2) + " (" + studentNames[lowestIndex] + ")";
+document.getElementById("best").textContent = highestIndex === -1 ? "Best-performing student: —" : "Best-performing student: " + studentNames[highestIndex];
+document.getElementById("empty").hidden = count > 0; }
+renderResults();
   </script>
 </body>
 </html>
